@@ -1,0 +1,45 @@
+- name: Install base packages
+  apt:
+    name:
+      - curl
+      - wget
+      - vim
+      - git
+    state: present
+
+- name: Ensure UFW is installed and enabled
+  apt:
+    name: ufw
+    state: present
+
+- name: Allow SSH through UFW
+  ufw:
+    rule: allow
+    name: OpenSSH
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+
+- name: Install fail2ban
+  apt:
+    name: fail2ban
+    state: present
+
+- name: Start and enable fail2ban service
+  systemd:
+    name: fail2ban
+    enabled: yes
+    state: started
+
+- name: Set timezone to UTC
+  command: timedatectl set-timezone UTC
+
+- name: Update all packages to latest version
+  apt:
+    upgrade: dist
+
+- name: Clean up unused packages
+  apt:
+    autoremove: yes
+    purge: yes

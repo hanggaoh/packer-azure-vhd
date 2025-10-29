@@ -1,0 +1,24 @@
+jobs:
+  build:
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - task: PackerBuild@1
+        inputs:
+          command: 'build'
+          templateLocation: 'packer/templates/azure-linux.pkr.hcl'
+          variablesFile: 'packer/variables.pkrvars.hcl'
+          scripts: 'packer/scripts/provision.sh'
+          cleanupScript: 'packer/scripts/cleanup.sh'
+          postProcessor: 'packer/post-processors/azure-post-processor.hcl'
+
+      - script: |
+          echo "Running validation tests..."
+          bash tests/validation/validate-image.sh
+        displayName: 'Validate Image'
+
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Pipeline.Workspace)'
+          artifact: 'hardened-linux-vhd'
+          publishLocation: 'pipeline'

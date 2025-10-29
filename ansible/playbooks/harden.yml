@@ -1,0 +1,77 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Update APT package index
+      apt:
+        update_cache: yes
+
+    - name: Upgrade all packages to the latest version
+      apt:
+        upgrade: dist
+
+    - name: Install security updates
+      apt:
+        upgrade: yes
+        only_upgrade: yes
+
+    - name: Install necessary packages
+      apt:
+        name:
+          - fail2ban
+          - ufw
+          - auditd
+          - apparmor
+        state: present
+
+    - name: Configure UFW to allow SSH
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Ensure fail2ban is running
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes
+
+    - name: Configure auditd
+      lineinfile:
+        path: /etc/audit/auditd.conf
+        regexp: '^max_log_file'
+        line: 'max_log_file = 50'
+
+    - name: Restart auditd
+      service:
+        name: auditd
+        state: restarted
+
+    - name: Ensure AppArmor is enabled
+      command: systemctl enable apparmor
+      ignore_errors: yes
+
+    - name: Ensure AppArmor is running
+      service:
+        name: apparmor
+        state: started
+        enabled: yes
+
+    - name: Set up SSH key authentication
+      authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "{{ lookup('file', '/path/to/your/public/key.pub') }}"
+
+    - name: Disable root login via SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+
+    - name: Restart SSH service
+      service:
+        name: ssh
+        state: restarted

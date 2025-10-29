@@ -1,0 +1,37 @@
+name: Build and Publish Hardened Linux VHD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Packer
+        uses: hashicorp/setup-packer@v1
+        with:
+          packer_version: 'latest'
+
+      - name: Build VHD with Packer
+        run: packer build -var-file=../variables.pkrvars.hcl ../templates/azure-linux.pkr.hcl
+
+      - name: Run Ansible Playbook for Hardening
+        run: ansible-playbook -i localhost, ../ansible/playbooks/harden.yml
+
+      - name: Validate the built image
+        run: bash ../tests/validation/validate-image.sh
+
+      - name: Publish the image to Azure
+        run: bash ../scripts/publish-image.sh
+
+      - name: Cleanup
+        run: bash ../packer/scripts/cleanup.sh
